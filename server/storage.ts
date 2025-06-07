@@ -175,7 +175,18 @@ export class DatabaseStorage implements IStorage {
   async createTestStep(step: InsertTestStep): Promise<TestStep> {
     const [created] = await db
       .insert(testSteps)
-      .values(step)
+      .values({
+        executionId: step.executionId,
+        stepNumber: step.stepNumber,
+        description: step.description,
+        status: step.status,
+        aiGeneratedScript: step.aiGeneratedScript || null,
+        executionTime: step.executionTime || null,
+        errorMessage: step.errorMessage || null,
+        screenshotPath: step.screenshotPath || null,
+        pageUrl: step.pageUrl || null,
+        extractedSelectors: step.extractedSelectors || []
+      })
       .returning();
     return created;
   }
@@ -211,7 +222,15 @@ export class DatabaseStorage implements IStorage {
   async createScrapedPage(page: InsertScrapedPage): Promise<ScrapedPage> {
     const [created] = await db
       .insert(scrapedPages)
-      .values(page)
+      .values({
+        projectId: page.projectId,
+        url: page.url,
+        htmlContent: page.htmlContent || null,
+        extractedSelectors: page.extractedSelectors || {},
+        isAuthRequired: page.isAuthRequired || false,
+        screenshots: page.screenshots || [],
+        lastScrapedAt: page.lastScrapedAt || new Date()
+      })
       .returning();
     return created;
   }
@@ -233,9 +252,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateScrapedPage(id: number, updates: Partial<InsertScrapedPage>): Promise<ScrapedPage> {
+    const updateData: any = { lastScrapedAt: new Date() };
+    if (updates.projectId !== undefined) updateData.projectId = updates.projectId;
+    if (updates.url !== undefined) updateData.url = updates.url;
+    if (updates.htmlContent !== undefined) updateData.htmlContent = updates.htmlContent;
+    if (updates.extractedSelectors !== undefined) updateData.extractedSelectors = updates.extractedSelectors;
+    if (updates.isAuthRequired !== undefined) updateData.isAuthRequired = updates.isAuthRequired;
+    if (updates.screenshots !== undefined) updateData.screenshots = updates.screenshots;
+
     const [updated] = await db
       .update(scrapedPages)
-      .set({ ...updates, lastScrapedAt: new Date() })
+      .set(updateData)
       .where(eq(scrapedPages.id, id))
       .returning();
     return updated;

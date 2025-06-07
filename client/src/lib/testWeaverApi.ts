@@ -3,75 +3,54 @@ import { apiRequest } from "./queryClient";
 export const testWeaverApi = {
   // Project operations
   async getProjects() {
-    return apiRequest('/api/projects');
+    return apiRequest('GET', '/api/projects');
   },
 
   async createProject(data: any) {
-    return apiRequest('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return apiRequest('POST', '/api/projects', data);
   },
 
   async updateProject(id: number, data: any) {
-    return apiRequest(`/api/projects/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
+    return apiRequest('PATCH', `/api/projects/${id}`, data);
   },
 
   async deleteProject(id: number) {
-    return apiRequest(`/api/projects/${id}`, {
-      method: 'DELETE',
-    });
+    return apiRequest('DELETE', `/api/projects/${id}`);
   },
 
   // Execution operations
   async getExecutions(projectId: number) {
-    return apiRequest(`/api/projects/${projectId}/executions`);
+    return apiRequest('GET', `/api/projects/${projectId}/executions`);
   },
 
   async createExecution(data: any) {
-    return apiRequest('/api/executions', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return apiRequest('POST', '/api/executions', data);
   },
 
   async getExecution(id: number) {
-    return apiRequest(`/api/executions/${id}`);
+    return apiRequest('GET', `/api/executions/${id}`);
   },
 
   async startExecution(id: number) {
-    return apiRequest(`/api/executions/${id}/start`, {
-      method: 'POST',
-    });
+    return apiRequest('POST', `/api/executions/${id}/start`);
   },
 
   async stopExecution(id: number) {
-    return apiRequest(`/api/executions/${id}/stop`, {
-      method: 'POST',
-    });
+    return apiRequest('POST', `/api/executions/${id}/stop`);
   },
 
   // Test step operations
   async getTestSteps(executionId: number) {
-    return apiRequest(`/api/executions/${executionId}/steps`);
+    return apiRequest('GET', `/api/executions/${executionId}/steps`);
   },
 
   // Webhook operations
   async simulateJiraWebhook(data: any) {
-    return apiRequest('/api/webhook/jira/simulate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return apiRequest('POST', '/api/webhook/jira/simulate', data);
   },
 
   // Scraping operations
   async scrapeWebsite(data: any) {
-    return apiRequest('/api/scrape', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return apiRequest('POST', '/api/scrape', data);
   },
 };
