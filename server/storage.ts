@@ -58,11 +58,20 @@ export class DatabaseStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+      })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
       })
@@ -114,7 +123,19 @@ export class DatabaseStorage implements IStorage {
   async createTestExecution(execution: InsertTestExecution): Promise<TestExecution> {
     const [created] = await db
       .insert(testExecutions)
-      .values(execution)
+      .values({
+        projectId: execution.projectId,
+        status: execution.status,
+        userStory: execution.userStory,
+        jiraTicketId: execution.jiraTicketId,
+        startedAt: execution.startedAt,
+        completedAt: execution.completedAt,
+        totalSteps: execution.totalSteps,
+        completedSteps: execution.completedSteps,
+        errorMessage: execution.errorMessage,
+        reportData: execution.reportData,
+        screenshotPaths: execution.screenshotPaths || []
+      })
       .returning();
     return created;
   }

@@ -62,7 +62,8 @@ export const testExecutions = pgTable("test_executions", {
   totalSteps: integer("total_steps").default(0),
   completedSteps: integer("completed_steps").default(0),
   errorMessage: text("error_message"),
-  screenshotPaths: jsonb("screenshot_paths").$type<string[]>(),
+  reportData: jsonb("report_data"),
+  screenshotPaths: jsonb("screenshot_paths").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
