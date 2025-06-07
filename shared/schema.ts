@@ -92,6 +92,7 @@ export const scrapedPages = pgTable("scraped_pages", {
   extractedSelectors: jsonb("extracted_selectors").$type<Record<string, string[]>>(),
   pageTitle: text("page_title"),
   isAuthRequired: boolean("is_auth_required").default(false),
+  screenshots: jsonb("screenshots").$type<string[]>().default([]),
   lastScrapedAt: timestamp("last_scraped_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });

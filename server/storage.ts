@@ -56,9 +56,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const insertData = {
+      id: userData.id!,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      profileImageUrl: userData.profileImageUrl,
+    };
+
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values(insertData)
       .onConflictDoUpdate({
         target: users.id,
         set: {
@@ -115,21 +123,23 @@ export class DatabaseStorage implements IStorage {
 
   // Test Execution operations
   async createTestExecution(execution: InsertTestExecution): Promise<TestExecution> {
+    const insertData = {
+      projectId: execution.projectId,
+      status: execution.status,
+      userStory: execution.userStory,
+      jiraTicketId: execution.jiraTicketId,
+      startedAt: execution.startedAt,
+      completedAt: execution.completedAt,
+      totalSteps: execution.totalSteps,
+      completedSteps: execution.completedSteps,
+      errorMessage: execution.errorMessage,
+      reportData: execution.reportData,
+      screenshotPaths: execution.screenshotPaths
+    };
+
     const [created] = await db
       .insert(testExecutions)
-      .values({
-        projectId: execution.projectId,
-        status: execution.status,
-        userStory: execution.userStory,
-        jiraTicketId: execution.jiraTicketId || null,
-        startedAt: execution.startedAt || new Date(),
-        completedAt: execution.completedAt || null,
-        totalSteps: execution.totalSteps || 0,
-        completedSteps: execution.completedSteps || 0,
-        errorMessage: execution.errorMessage || null,
-        reportData: execution.reportData || null,
-        screenshotPaths: execution.screenshotPaths || []
-      })
+      .values(insertData)
       .returning();
     return created;
   }
