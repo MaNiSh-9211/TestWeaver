@@ -58,13 +58,7 @@ export class DatabaseStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values({
-        id: userData.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        profileImageUrl: userData.profileImageUrl,
-      })
+      .values(userData)
       .onConflictDoUpdate({
         target: users.id,
         set: {
@@ -127,13 +121,13 @@ export class DatabaseStorage implements IStorage {
         projectId: execution.projectId,
         status: execution.status,
         userStory: execution.userStory,
-        jiraTicketId: execution.jiraTicketId,
-        startedAt: execution.startedAt,
-        completedAt: execution.completedAt,
-        totalSteps: execution.totalSteps,
-        completedSteps: execution.completedSteps,
-        errorMessage: execution.errorMessage,
-        reportData: execution.reportData,
+        jiraTicketId: execution.jiraTicketId || null,
+        startedAt: execution.startedAt || new Date(),
+        completedAt: execution.completedAt || null,
+        totalSteps: execution.totalSteps || 0,
+        completedSteps: execution.completedSteps || 0,
+        errorMessage: execution.errorMessage || null,
+        reportData: execution.reportData || null,
         screenshotPaths: execution.screenshotPaths || []
       })
       .returning();
@@ -157,9 +151,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTestExecution(id: number, updates: Partial<InsertTestExecution>): Promise<TestExecution> {
+    const updateData: any = {};
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.userStory !== undefined) updateData.userStory = updates.userStory;
+    if (updates.jiraTicketId !== undefined) updateData.jiraTicketId = updates.jiraTicketId;
+    if (updates.startedAt !== undefined) updateData.startedAt = updates.startedAt;
+    if (updates.completedAt !== undefined) updateData.completedAt = updates.completedAt;
+    if (updates.totalSteps !== undefined) updateData.totalSteps = updates.totalSteps;
+    if (updates.completedSteps !== undefined) updateData.completedSteps = updates.completedSteps;
+    if (updates.errorMessage !== undefined) updateData.errorMessage = updates.errorMessage;
+    if (updates.reportData !== undefined) updateData.reportData = updates.reportData;
+    if (updates.screenshotPaths !== undefined) updateData.screenshotPaths = updates.screenshotPaths;
+
     const [updated] = await db
       .update(testExecutions)
-      .set(updates)
+      .set(updateData)
       .where(eq(testExecutions.id, id))
       .returning();
     return updated;
@@ -183,9 +189,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTestStep(id: number, updates: Partial<InsertTestStep>): Promise<TestStep> {
+    const updateData: any = {};
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.aiGeneratedScript !== undefined) updateData.aiGeneratedScript = updates.aiGeneratedScript;
+    if (updates.executionTime !== undefined) updateData.executionTime = updates.executionTime;
+    if (updates.errorMessage !== undefined) updateData.errorMessage = updates.errorMessage;
+    if (updates.screenshotPath !== undefined) updateData.screenshotPath = updates.screenshotPath;
+    if (updates.pageUrl !== undefined) updateData.pageUrl = updates.pageUrl;
+    if (updates.extractedSelectors !== undefined) updateData.extractedSelectors = updates.extractedSelectors;
+
     const [updated] = await db
       .update(testSteps)
-      .set(updates)
+      .set(updateData)
       .where(eq(testSteps.id, id))
       .returning();
     return updated;
