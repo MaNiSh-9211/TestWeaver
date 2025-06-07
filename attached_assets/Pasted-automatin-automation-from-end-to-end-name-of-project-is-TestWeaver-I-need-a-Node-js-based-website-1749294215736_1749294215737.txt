@@ -1,0 +1,80 @@
+automatin automation from end to end . name of project is TestWeaver
+I need a Node.js based website which listens the webhook from the jira and then recives images and the text in that jira ticket and ten extract the text from the jira ticket and send that to ai agent created using langgraph and lang chain , the api for the llm is provided by groq not the grock by x. find how touse that yourself and then the pupetier in headless mode ofr automation testing and the for extracting the entire webpage . then teh webpages code went to the llm with all teh ticket text the steps or user summary the llm checks the steps those are there and which steps are complete based on that the llm desides which step to complete and based on that step like where to click type etc or hover any kind of intraction it checks the webpage code scraped and then decide where to do what and decides selector and generate pupetier automation script and tehn send it to the server and then sevrer run that pupetier script and again scrapes the web content and send it to the llm again till all teh steps are complete. and keep the brouser connection active of pupetier so that there will be no need to re run previously exicuted scripts liek i navigated to 2nd page by performing some actions then again i have to do same thing to exicute next script provided by lllm. when teh sevrer got the tickets content there will always be a base url and the auth credentials which is nasted array object like userbname password etc and more made this yourself so that it can handle all cases. then before trigring the agent the pupertier navigate to that base url and then extract all html and then sends it to the agent . then above workflow kepp repeating , handle all cases that i forgot to menton. and remember that dynamic scripts line below. as the ticket can include any number of steps and any kind of automation tasks like file upload etc so create a template file which have the structure that the jira ticket have to follow so that i can test easily and agent can work with accuracy.
+in teh tech stack use only nodejs with typescript and react and pupetier and mongodb if needed . there is no need for any authentication in that website and create all files with comments in each step so that it will be easy for me to change anything . and try to keep everything dynamics like some website in which the automation have to done can have authintacation and some not. so try to handle each sase seperately. and create files like env for everything that i need to add myself like webhook link etc and api keys and all .
+
+Workflow Overview:
+
+Webhook Trigger:
+
+A new Jira ticket is created.
+
+Jira sends a webhook to my Node.js server containing:
+
+The ticket’s content (user story).
+
+Base URL of the website/app to test.
+
+Credentials and test steps.
+
+Website Scraping:
+
+The agent (Node.js server) scrapes the target website for its HTML structure.
+
+The server extracts selectors (e.g., CSS selectors, XPath) for clickable elements.
+
+LLM Integration:
+
+The scraped code (HTML and selectors) is sent to the LLM (via API) along with the user story.
+
+The LLM analyzes the user story and chooses the appropriate selector for the current test step (e.g., click a submit button).
+
+Automation Script Generation:
+
+The LLM returns a dynamic automation snippet (e.g., await page.click("${selector}")).
+
+The server executes this snippet using Puppeteer or Playwright.
+
+Dynamic Workflow:
+
+If navigation is required (e.g., to the next page), the agent re-scrapes the new page.
+
+The updated selectors and HTML are sent back to the LLM to determine the next action.
+
+This loop continues until the LLM confirms that all tasks in the user story are completed.
+
+Error Handling:
+
+If an error occurs (e.g., selector not found, element not clickable), the system generates a detailed failure report.
+
+Completion Report:
+
+Upon successful completion, the system generates a detailed success report.
+
+
+remember the ai must look futurestic from the future with 3d elements and animations on the home page like vercels website the unique matrix like squares and everything like a unique and best looking ui website
+
+groq credenshilals
+CHANGE_ME_GROQ_API_KEY
+
+
+usages guide
+Run it now
+curl
+
+curl https://api.groq.com/openai/v1/chat/completions -s \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer CHANGE_ME_GROQ_API_KEY" \
+-d '{
+"model": "meta-llama/llama-4-scout-17b-16e-instruct",
+"messages": [{
+    "role": "user",
+    "content": "Explain the importance of fast language models"
+}]
+}'
+
+
+and remeber you know how jira works and its webhook integration so in the website provide options in that way and remeber login and signup must not be compulsary the login with github and google myust be there but optional
+
+the ai agent must work perfectly first do the backend then frontend the backend likw llm api integration and the ai agent and automation testing logic exectution and report generation how ai response scripts  having pupetier logic should run on the headless brouser instance how to maintin the state like after doing i automation task and then waiting for llm to give next sctript and then continue autimation testing with that and so on the backend must work the user only have to create the ticklet and webhook from jira only and the sever must work correctly . and remember to use mongodb with mongoose . noooooo postgress or any mysql like databases i need mongodb onlyyyyy
+
+and i want all in 1 checkpoint 
