@@ -1,4 +1,5 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import * as puppeteer from 'puppeteer';
+import { Browser, Page } from 'puppeteer'; // Import Browser and Page types
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
@@ -26,15 +27,22 @@ export class PuppeteerService {
     try {
       console.log('Initializing Puppeteer browser...');
       this.browser = await puppeteer.launch({
-        headless: true,
+        headless: false, // Set to false for non-headless mode
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-accelerated-2d-canvas',
           '--disable-gpu',
-          '--window-size=1920,1080'
+          '--window-size=1920,1080',
+          '--start-maximized'
         ],
+        defaultViewport: null, // This allows the window to be resized
+        executablePath: process.platform === 'win32' 
+          ? 'C://Program Files//Google//Chrome//Application//chrome.exe' // Windows path
+          : process.platform === 'darwin'
+          ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS path
+          : '/usr/bin/google-chrome', // Linux path
       });
       
       this.page = await this.browser.newPage();
@@ -86,7 +94,9 @@ export class PuppeteerService {
       });
 
       // Wait for the page to load completely
-      await this.page.waitForTimeout(2000);
+      // await this.page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
 
       // Check if authentication is required
       const isAuthRequired = await this.detectAuthRequirement();
@@ -95,7 +105,9 @@ export class PuppeteerService {
       if (isAuthRequired && authCredentials) {
         await this.handleAuthentication(authCredentials);
         // Wait after authentication
-        await this.page.waitForTimeout(3000);
+        // await this.page.waitForTimeout(3000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
       }
 
       // Get page info
@@ -341,9 +353,12 @@ export class PuppeteerService {
         ];
 
         // Remove duplicates and empty strings
+        // Object.keys(result).forEach(key => {
+        //   result[key] = [...new Set(result[key].filter(Boolean))];
+        // });
         Object.keys(result).forEach(key => {
-          result[key] = [...new Set(result[key].filter(Boolean))];
-        });
+  result[key] = Array.from(new Set(result[key].filter(Boolean)));
+});
 
         return result;
       });
@@ -365,10 +380,14 @@ export class PuppeteerService {
       const timestamp = Date.now();
       const screenshotPath = join(screenshotDir, `screenshot-${timestamp}.png`);
 
+      // await this.page.screenshot({
+      //   path: screenshotPath,
+      //   fullPage: true,
+      // });
       await this.page.screenshot({
-        path: screenshotPath,
-        fullPage: true,
-      });
+  path: screenshotPath as `${string}.png`,
+  fullPage: true,
+});
 
       return [screenshotPath];
     } catch (error) {
@@ -377,7 +396,12 @@ export class PuppeteerService {
     }
   }
 
-  async executeAutomationScript(script: string): Promise<{ success: boolean; result?: any; error?: string }> {
+  async executeAutomationScript(script: string): Promise<{ 
+    success: boolean; 
+    result?: any; 
+    error?: string;
+    screenshot?: string;
+  }> {
     if (!this.page) {
       return { success: false, error: 'Puppeteer not initialized' };
     }
@@ -398,11 +422,14 @@ export class PuppeteerService {
         })
       `;
 
-      const result = await this.page.evaluate(wrappedScript, this.page);
-      
+      const result = await this.page.evaluate(wrappedScript, this.page) as any;
+              console.log(`---------Script to exicute is :::   ${wrappedScript}-----------------------------------------------------`);
+
       if (result.success) {
         console.log('Script executed successfully');
-        return { success: true, result };
+        // Take screenshot after successful execution
+        const screenshotPath = await this.takeScreenshot();
+        return { success: true, result, screenshot: screenshotPath };
       } else {
         console.error('Script execution failed:', result.error);
         return { success: false, error: result.error };
@@ -441,6 +468,7 @@ export class PuppeteerService {
     }
   }
 
+  
   async takeScreenshot(filename?: string): Promise<string> {
     if (!this.page) {
       throw new Error('Puppeteer not initialized');
@@ -452,13 +480,17 @@ export class PuppeteerService {
     const timestamp = Date.now();
     const screenshotPath = join(screenshotDir, filename || `screenshot-${timestamp}.png`);
 
-    await this.page.screenshot({
-      path: screenshotPath,
-      fullPage: true,
-    });
-
+    // await this.page.screenshot({
+    //   path: screenshotPath,
+    //   fullPage: true,
+    // });
+await this.page.screenshot({
+  path: screenshotPath as `${string}.png`,
+  fullPage: true,
+});
     return screenshotPath;
   }
+  
 }
 
 export const puppeteerService = new PuppeteerService();

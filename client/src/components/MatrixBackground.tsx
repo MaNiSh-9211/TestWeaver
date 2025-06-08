@@ -24,55 +24,55 @@ export default function MatrixBackground() {
     const drops: number[] = [];
     const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    // Initialize drops
-    for (let i = 0; i < columns; i++) {
-      drops[i] = Math.random() * canvas.height;
-    }
+    // // Initialize drops
+    // for (let i = 0; i < columns; i++) {
+    //   drops[i] = Math.random() * canvas.height;
+    // }
 
-    let animationId: number;
-    let lastTime = 0;
+    // let animationId: number;
+    // let lastTime = 0;
 
-    const draw = (currentTime: number) => {
-      // Throttle animation to ~60fps
-      if (currentTime - lastTime < 16) {
-        animationId = requestAnimationFrame(draw);
-        return;
-      }
-      lastTime = currentTime;
+  //   const draw = (currentTime: number) => {
+  //     // Throttle animation to ~60fps
+  //     if (currentTime - lastTime < 16) {
+  //       animationId = requestAnimationFrame(draw);
+  //       return;
+  //     }
+  //     lastTime = currentTime;
 
-      // Black background with slight transparency for trailing effect
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  //     // Black background with slight transparency for trailing effect
+  //     ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+  //     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Matrix green color
-      ctx.fillStyle = '#00FF41';
-      ctx.font = '14px Courier New';
+  //     // Matrix green color
+  //     ctx.fillStyle = '#00FF41';
+  //     ctx.font = '14px Courier New';
 
-      // Draw characters
-      for (let i = 0; i < columns; i++) {
-        const char = chars[Math.floor(Math.random() * chars.length)];
-        const x = i * 20;
-        const y = drops[i] * 20;
+  //     // Draw characters
+  //     for (let i = 0; i < columns; i++) {
+  //       const char = chars[Math.floor(Math.random() * chars.length)];
+  //       const x = i * 20;
+  //       const y = drops[i] * 20;
 
-        ctx.fillText(char, x, y);
+  //       ctx.fillText(char, x, y);
 
-        // Reset drop position randomly
-        if (y > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
+  //       // Reset drop position randomly
+  //       if (y > canvas.height && Math.random() > 0.975) {
+  //         drops[i] = 0;
+  //       }
 
-        drops[i]++;
-      }
+  //       drops[i]++;
+  //     }
 
-      animationId = requestAnimationFrame(draw);
-    };
+  //     animationId = requestAnimationFrame(draw);
+  //   };
 
-    animationId = requestAnimationFrame(draw);
+  //   animationId = requestAnimationFrame(draw);
 
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resizeCanvas);
-    };
+  //   return () => {
+  //     cancelAnimationFrame(animationId);
+  //     window.removeEventListener('resize', resizeCanvas);
+  //   };
   }, []);
 
   return (

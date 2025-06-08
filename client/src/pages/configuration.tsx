@@ -64,7 +64,7 @@ export default function Configuration() {
   }, []);
 
   // Fetch projects
-  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<any[]>({ // changed to any
     queryKey: ['/api/projects'],
   });
 

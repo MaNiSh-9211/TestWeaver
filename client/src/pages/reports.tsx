@@ -36,7 +36,7 @@ export default function Reports() {
   const [dateRange, setDateRange] = useState<string>('30');
 
   // Fetch projects for filter
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<any[]>({
     queryKey: ['/api/projects'],
   });
 

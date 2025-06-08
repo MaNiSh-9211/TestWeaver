@@ -4,6 +4,10 @@ import {
   testExecutions,
   testSteps,
   scrapedPages,
+  
+  aiConversations,// added myself
+  testConfigurations,
+
   type User,
   type UpsertUser,
   type TestProject,
@@ -14,6 +18,12 @@ import {
   type InsertTestStep,
   type ScrapedPage,
   type InsertScrapedPage,
+
+  type AiConversation,// added myself
+  type InsertAiConversation,
+  type TestConfiguration,
+  type InsertTestConfiguration,
+
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -46,6 +56,20 @@ export interface IStorage {
   getScrapedPage(projectId: number, url: string): Promise<ScrapedPage | undefined>;
   getScrapedPages(projectId: number): Promise<ScrapedPage[]>;
   updateScrapedPage(id: number, updates: Partial<InsertScrapedPage>): Promise<ScrapedPage>;
+
+
+  // added myself 
+  // AI Conversation operations
+  createAiConversation(conversation: InsertAiConversation): Promise<AiConversation>;
+  getAiConversationsByExecution(executionId: number): Promise<AiConversation[]>;
+  getAiConversationsByStep(stepId: number): Promise<AiConversation[]>;
+
+  // Test Configuration operations
+  createTestConfiguration(config: InsertTestConfiguration): Promise<TestConfiguration>;
+  getTestConfiguration(id: number): Promise<TestConfiguration | undefined>;
+  getTestConfigurations(projectId: number): Promise<TestConfiguration[]>;
+  updateTestConfiguration(id: number, updates: Partial<InsertTestConfiguration>): Promise<TestConfiguration>;
+  deleteTestConfiguration(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -132,9 +156,13 @@ export class DatabaseStorage implements IStorage {
       completedAt: execution.completedAt,
       totalSteps: execution.totalSteps,
       completedSteps: execution.completedSteps,
+      failedSteps: execution.failedSteps || 0,
       errorMessage: execution.errorMessage,
       reportData: execution.reportData,
-      screenshotPaths: execution.screenshotPaths
+      // screenshotPaths: execution.screenshotPaths
+     screenshotPaths: Array.isArray(execution.screenshotPaths)
+      ? [...execution.screenshotPaths]
+      : (execution.screenshotPaths ? [execution.screenshotPaths] : []),
     };
 
     const [created] = await db
@@ -195,7 +223,10 @@ export class DatabaseStorage implements IStorage {
         errorMessage: step.errorMessage || null,
         screenshotPath: step.screenshotPath || null,
         pageUrl: step.pageUrl || null,
-        extractedSelectors: step.extractedSelectors || []
+        // extractedSelectors: step.extractedSelectors || []
+         extractedSelectors: Array.isArray(step.extractedSelectors)
+        ? [...step.extractedSelectors]
+        : [],
       })
       .returning();
     return created;
@@ -229,21 +260,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Scraped Page operations
-  async createScrapedPage(page: InsertScrapedPage): Promise<ScrapedPage> {
-    const [created] = await db
-      .insert(scrapedPages)
-      .values({
-        projectId: page.projectId,
-        url: page.url,
-        htmlContent: page.htmlContent || null,
-        extractedSelectors: page.extractedSelectors || {},
-        isAuthRequired: page.isAuthRequired || false,
-        screenshots: page.screenshots || [],
-        lastScrapedAt: page.lastScrapedAt || new Date()
-      })
-      .returning();
-    return created;
+  // async createScrapedPage(page: InsertScrapedPage): Promise<ScrapedPage> {
+  //   const [created] = await db
+  //     .insert(scrapedPages)
+  //     .values({
+  //       projectId: page.projectId,
+  //       url: page.url,
+  //       htmlContent: page.htmlContent || null,
+  //       extractedSelectors: page.extractedSelectors || {},
+  //       isAuthRequired: page.isAuthRequired || false,
+  //       screenshots: page.screenshots || [],
+  //       lastScrapedAt: page.lastScrapedAt || new Date()
+  //     })
+  //     .returning();
+  //   return created;
+  // }
+
+
+  async createScrapedPage(data: InsertScrapedPage): Promise<ScrapedPage> {
+    const insertData = {
+      projectId: data.projectId,
+      url: data.url,
+      htmlContent: data.htmlContent || '',
+      extractedSelectors: (data.extractedSelectors || {}) as Record<string, string[]>,
+      pageTitle: data.pageTitle || '',
+      isAuthRequired: data.isAuthRequired || false,
+      screenshots: (data.screenshots || []) as string[],
+      lastScrapedAt: data.lastScrapedAt || new Date()
+    };
+
+    const result = await db.insert(scrapedPages).values(insertData).returning();
+    return result[0];
   }
+
 
   async getScrapedPage(projectId: number, url: string): Promise<ScrapedPage | undefined> {
     const [page] = await db
@@ -277,6 +326,80 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
+
+  // AI Conversation operations
+  async createAiConversation(conversation: InsertAiConversation): Promise<AiConversation> {
+    const [created] = await db
+      .insert(aiConversations)
+      .values(conversation)
+      .returning();
+    return created;
+  }
+
+  async getAiConversationsByExecution(executionId: number): Promise<AiConversation[]> {
+    return await db
+      .select()
+      .from(aiConversations)
+      .where(eq(aiConversations.executionId, executionId))
+      .orderBy(desc(aiConversations.createdAt));
+  }
+
+  async getAiConversationsByStep(stepId: number): Promise<AiConversation[]> {
+    return await db
+      .select()
+      .from(aiConversations)
+      .where(eq(aiConversations.stepId, stepId))
+      .orderBy(desc(aiConversations.createdAt));
+  }
+
+  // Test Configuration operations
+  async createTestConfiguration(config: InsertTestConfiguration): Promise<TestConfiguration> {
+    const [created] = await db
+      .insert(testConfigurations)
+      .values({
+        ...config,
+        updatedAt: new Date()
+      })
+      .returning();
+    return created;
+  }
+
+  async getTestConfiguration(id: number): Promise<TestConfiguration | undefined> {
+    const [config] = await db
+      .select()
+      .from(testConfigurations)
+      .where(eq(testConfigurations.id, id));
+    return config;
+  }
+
+  async getTestConfigurations(projectId: number): Promise<TestConfiguration[]> {
+    return await db
+      .select()
+      .from(testConfigurations)
+      .where(eq(testConfigurations.projectId, projectId))
+      .orderBy(desc(testConfigurations.updatedAt));
+  }
+
+  async updateTestConfiguration(id: number, updates: Partial<InsertTestConfiguration>): Promise<TestConfiguration> {
+    const updateData = {
+      ...updates,
+      updatedAt: new Date()
+    };
+
+    const [updated] = await db
+      .update(testConfigurations)
+      .set(updateData)
+      .where(eq(testConfigurations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTestConfiguration(id: number): Promise<void> {
+    await db
+      .delete(testConfigurations)
+      .where(eq(testConfigurations.id, id));
+  }
+
 }
 
 export const storage = new DatabaseStorage();

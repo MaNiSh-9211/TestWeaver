@@ -61,6 +61,7 @@ export const testExecutions = pgTable("test_executions", {
   completedAt: timestamp("completed_at"),
   totalSteps: integer("total_steps").default(0),
   completedSteps: integer("completed_steps").default(0),
+  failedSteps: integer("failed_steps").default(0),
   errorMessage: text("error_message"),
   reportData: jsonb("report_data"),
   screenshotPaths: jsonb("screenshot_paths").$type<string[]>().default([]),
@@ -97,6 +98,44 @@ export const scrapedPages = pgTable("scraped_pages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
+
+// below 2 added myself
+// AI Conversations - Track AI interactions
+export const aiConversations = pgTable("ai_conversations", {
+  id: serial("id").primaryKey(),
+  executionId: integer("execution_id").references(() => testExecutions.id).notNull(),
+  stepId: integer("step_id").references(() => testSteps.id),
+  prompt: text("prompt").notNull(),
+  response: text("response").notNull(),
+  model: text("model").notNull(),
+  tokensUsed: integer("tokens_used").default(0),
+  responseTime: integer("response_time").default(0), // milliseconds
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Test Configurations - Store test automation configurations
+export const testConfigurations = pgTable("test_configurations", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => testProjects.id).notNull(),
+  name: text("name").notNull(),
+  targetUrl: text("target_url").notNull(),
+  userStory: text("user_story").notNull(),
+  credentials: jsonb("credentials").$type<{
+    username?: string;
+    password?: string;
+    type: 'basic' | 'oauth';
+  }>(),
+  maxSteps: integer("max_steps").default(20),
+  timeout: integer("timeout").default(30000), // milliseconds
+  retryCount: integer("retry_count").default(3),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+
+
+
 // Relations
 export const testProjectsRelations = relations(testProjects, ({ many, one }) => ({
   executions: many(testExecutions),
@@ -131,6 +170,7 @@ export const scrapedPagesRelations = relations(scrapedPages, ({ one }) => ({
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
+  id: true,
   email: true,
   firstName: true,
   lastName: true,
@@ -169,3 +209,14 @@ export type TestStep = typeof testSteps.$inferSelect;
 export type InsertTestStep = z.infer<typeof insertTestStepSchema>;
 export type ScrapedPage = typeof scrapedPages.$inferSelect;
 export type InsertScrapedPage = z.infer<typeof insertScrapedPageSchema>;
+
+
+// added myself
+
+// Types for AI Conversations
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type InsertAiConversation = typeof aiConversations.$inferInsert;
+
+// Types for Test Configurations
+export type TestConfiguration = typeof testConfigurations.$inferSelect;
+export type InsertTestConfiguration = typeof testConfigurations.$inferInsert;

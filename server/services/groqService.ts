@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Groq API configuration
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY || 'CHANGE_ME_GROQ_API_KEY';
-const MODEL = 'meta-llama/llama-3-70b-8192'; // Using a more stable model
+const MODEL = 'deepseek-r1-distill-llama-70b'; // Using a more stable model
 
 // Response schemas for validation
 const AutomationStepSchema = z.object({
@@ -32,6 +32,19 @@ export interface GroqAnalysisResult {
   steps: AutomationStep[];
   reasoning: string;
   nextAction?: string;
+}
+
+// below 2 added myself 
+export interface AutomationScript {
+  description: string;
+  script: string;
+  nextAction?: string;
+  isComplete: boolean;
+}
+
+export interface ErrorRecovery {
+  shouldRetry: boolean;
+  recoveryScript: string;
 }
 
 export class GroqService {
@@ -208,6 +221,199 @@ What is the next step to continue toward completing the user story?`;
     }
   }
 
+//   async validateTestCompletion(
+//     userStory: string,
+//     executedSteps: string[],
+//     finalState: string
+//   ): Promise<{ isComplete: boolean; reason: string; confidence: number }> {
+//     const systemPrompt = `You are validating whether an automation test has successfully completed its user story. Analyze the executed steps and final state to determine completion.
+
+// Return JSON in this format:
+// {
+//   "isComplete": true/false,
+//   "reason": "Explanation of why the test is complete or what is missing",
+//   "confidence": 0-100 (percentage confidence in your assessment)
+// }`;
+
+//     const userPrompt = `Validate test completion:
+
+// USER STORY: ${userStory}
+
+// EXECUTED STEPS:
+// ${executedSteps.join('\n')}
+
+// FINAL STATE: ${finalState}
+
+// Has the user story been successfully completed?`;
+
+//     try {
+//       const responseContent = await this.makeApiCall([
+//         { role: 'system', content: systemPrompt },
+//         { role: 'user', content: userPrompt }
+//       ]);
+
+//       const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+//       const jsonContent = jsonMatch ? jsonMatch[1] : responseContent;
+//       return JSON.parse(jsonContent);
+//     } catch (error) {
+//       console.error('Error in validateTestCompletion:', error);
+//       return {
+//         isComplete: false,
+//         reason: 'Failed to validate completion due to AI service error',
+//         confidence: 0
+//       };
+//     }
+//   }
+// }
+
+// export const groqService = new GroqService();
+
+
+
+
+async generateAutomationScript(
+    userStory: string,
+    pageInfo: {
+      selectors: Record<string, string[]>;
+      pageTitle: string;
+      isAuthRequired: boolean;
+    },
+    currentPageState: {
+      url: string;
+      title: string;
+      html: string;
+    },
+    completedSteps: string[]
+  ): Promise<AutomationScript> {
+    const systemPrompt = `You are an expert web automation engineer. Generate a Puppeteer automation script based on the user story and current page state.
+
+Return JSON in this format:
+{
+  "description": "Human readable description of the step",
+  "script": "Puppeteer automation script",
+  "nextAction": "Optional URL to navigate to",
+  "isComplete": true/false
+}
+
+IMPORTANT:
+1. Generate valid Puppeteer code
+2. Include proper error handling
+3. Add appropriate waits
+4. Handle navigation if needed
+5. Validate success conditions`;
+
+    const userPrompt = `Generate automation step:
+
+USER STORY: ${userStory}
+
+CURRENT PAGE:
+URL: ${currentPageState.url}
+Title: ${currentPageState.title}
+
+AVAILABLE SELECTORS:
+${JSON.stringify(pageInfo.selectors, null, 2)}
+
+AUTH REQUIRED: ${pageInfo.isAuthRequired}
+
+COMPLETED STEPS:
+${completedSteps.join('\n')}
+
+Generate the next automation step.`;
+
+    try {
+      const responseContent = await this.makeApiCall([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]);
+
+      const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      const jsonContent = jsonMatch ? jsonMatch[1] : responseContent;
+      
+      const parsedResponse = JSON.parse(jsonContent);
+      
+      // Validate the response structure
+      if (!parsedResponse.description || !parsedResponse.script) {
+        throw new Error('Invalid response format: missing required fields');
+      }
+
+      return {
+        description: parsedResponse.description,
+        script: parsedResponse.script,
+        nextAction: parsedResponse.nextAction,
+        isComplete: parsedResponse.isComplete || false
+      };
+    } catch (error) {
+      console.error('Error in generateAutomationScript:', error);
+      throw new Error(`Failed to generate automation script: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async generateErrorRecovery(
+    error: string,
+    failedScript: string,
+    currentPageState: {
+      url: string;
+      title: string;
+      html: string;
+    }
+  ): Promise<ErrorRecovery> {
+    const systemPrompt = `You are an expert web automation engineer. Generate a recovery script for a failed automation step.
+
+Return JSON in this format:
+{
+  "shouldRetry": true/false,
+  "recoveryScript": "Puppeteer recovery script"
+}
+
+IMPORTANT:
+1. Analyze the error carefully
+2. Generate a safe recovery script
+3. Include proper error handling
+4. Add appropriate waits
+5. Validate recovery success`;
+
+    const userPrompt = `Generate error recovery:
+
+ERROR: ${error}
+
+FAILED SCRIPT:
+${failedScript}
+
+CURRENT PAGE:
+URL: ${currentPageState.url}
+Title: ${currentPageState.title}
+
+Generate a recovery script if possible.`;
+
+    try {
+      const responseContent = await this.makeApiCall([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]);
+
+      const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      const jsonContent = jsonMatch ? jsonMatch[1] : responseContent;
+      
+      const parsedResponse = JSON.parse(jsonContent);
+      
+      // Validate the response structure
+      if (typeof parsedResponse.shouldRetry !== 'boolean' || !parsedResponse.recoveryScript) {
+        throw new Error('Invalid response format: missing required fields');
+      }
+
+      return {
+        shouldRetry: parsedResponse.shouldRetry,
+        recoveryScript: parsedResponse.recoveryScript
+      };
+    } catch (error) {
+      console.error('Error in generateErrorRecovery:', error);
+      return {
+        shouldRetry: false,
+        recoveryScript: ''
+      };
+    }
+  }
+
   async validateTestCompletion(
     userStory: string,
     executedSteps: string[],
@@ -220,7 +426,14 @@ Return JSON in this format:
   "isComplete": true/false,
   "reason": "Explanation of why the test is complete or what is missing",
   "confidence": 0-100 (percentage confidence in your assessment)
-}`;
+}
+
+IMPORTANT:
+1. Carefully analyze the user story
+2. Check all required steps were executed
+3. Validate the final state
+4. Consider edge cases
+5. Provide clear reasoning`;
 
     const userPrompt = `Validate test completion:
 
@@ -241,7 +454,19 @@ Has the user story been successfully completed?`;
 
       const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       const jsonContent = jsonMatch ? jsonMatch[1] : responseContent;
-      return JSON.parse(jsonContent);
+      
+      const parsedResponse = JSON.parse(jsonContent);
+      
+      // Validate the response structure
+      if (typeof parsedResponse.isComplete !== 'boolean' || !parsedResponse.reason || typeof parsedResponse.confidence !== 'number') {
+        throw new Error('Invalid response format: missing required fields');
+      }
+
+      return {
+        isComplete: parsedResponse.isComplete,
+        reason: parsedResponse.reason,
+        confidence: Math.min(Math.max(parsedResponse.confidence, 0), 100)
+      };
     } catch (error) {
       console.error('Error in validateTestCompletion:', error);
       return {
